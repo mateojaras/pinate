@@ -6,12 +6,13 @@ import { ActualizarCategoria } from '../Dominio/actions/actionProducto';
 import ConexionesProducto from '../conexiones/api/ConexionesProducto';
 
 
+
 const { SubMenu } = Menu;
 const {   Sider } = Layout;
 const categorias = ["Mostrar Todos", "globos", "decoracion", "peluche"];
 
 export default function BarraLateral() {
-
+    
     const dispatch = useDispatch();
 
     const Ordenar = async (e) => {

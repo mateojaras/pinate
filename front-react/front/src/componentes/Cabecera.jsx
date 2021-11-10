@@ -20,7 +20,7 @@ export default function Cabecera() {
           Home
         </Menu.Item>
         <Menu.Item
-          key="1"
+          key="2"
           onClick={() => {
             history.push("/crear");
           }}

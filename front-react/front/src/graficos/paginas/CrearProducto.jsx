@@ -17,6 +17,7 @@ import {
   Switch,
 } from "antd";
 import BarraLateral from "../../componentes/BarraLateral";
+import { useFormik } from "formik";
 
 const { Content } = Layout;
 
@@ -28,6 +29,19 @@ export default function CrearProducto() {
   const categorias = ["peluche", "globos", "decoracion"];
 
   const dispatch = useDispatch();
+
+  const formik = useFormik({
+    initialValues: {
+      nombre: "",
+      foto: "",
+      descripcion: "",
+      precio: "",
+      cantidad: "",
+    },
+    onSubmit: (datos) => {
+      console.log(datos);
+    },
+  });
 
   const [componentSize, setComponentSize] = useState("default");
 
@@ -105,6 +119,7 @@ export default function CrearProducto() {
                 }}
                 onValuesChange={onFormLayoutChange}
                 size={componentSize}
+                onFinish={formik.handleSubmit}
               >
                 <Form.Item label="Form Size" name="size">
                   <Radio.Group>
@@ -114,7 +129,7 @@ export default function CrearProducto() {
                   </Radio.Group>
                 </Form.Item>
                 <Form.Item label="Input">
-                  <Input />
+                  <Input name="nombre" onChange={formik.handleChange} />
                 </Form.Item>
                 <Form.Item label="Select">
                   <Select>
@@ -162,8 +177,10 @@ export default function CrearProducto() {
                 <Form.Item label="Switch" valuePropName="checked">
                   <Switch />
                 </Form.Item>
-                <Form.Item label="Button">
-                  <Button>Button</Button>
+                <Form.Item wrapperCol={{ offset: 8 }}>
+                  <Button type="primary" htmlType="submit">
+                    Submit
+                  </Button>
                 </Form.Item>
               </Form>
             </>
