@@ -3,44 +3,67 @@ import { useDispatch } from "react-redux";
 import ConexionesProducto from "../../conexiones/api/ConexionesProducto";
 import "../../estilos/crearproducto.css";
 import Cabecera from "../../componentes/Cabecera";
+import * as Yup from "yup";
+import { Formik } from "formik";
 import {
   Layout,
   Form,
+  Upload,
   Input,
   Button,
-  Radio,
   Select,
-  Cascader,
-  DatePicker,
-  InputNumber,
-  TreeSelect,
   Switch,
+  message,
 } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
 import BarraLateral from "../../componentes/BarraLateral";
 import { useFormik } from "formik";
 
 const { Content } = Layout;
+const { Option } = Select;
 
 export default function CrearProducto() {
-  const [imagen64, setimagen64] = useState();
-  const [categoria, setcategoria] = useState("categorias");
-  const [dropdown, setdropdown] = useState(false);
-  const [visible, setvisible] = useState(true);
   const categorias = ["peluche", "globos", "decoracion"];
-
   const dispatch = useDispatch();
 
   const formik = useFormik({
     initialValues: {
-      nombre: "",
-      foto: "",
-      descripcion: "",
-      precio: "",
-      cantidad: "",
+      nombre: null,
+      foto: null,
+      descripcion: null,
+      precio: null,
+      cantidad: null,
+      categoria: null,
+      visual: true,
+      prueba:''
     },
-    onSubmit: (datos) => {
-      console.log(datos);
+    validationSchema: Yup.object({
+      nombre: Yup.string().required("El nombre es obligatorio"),
+      precio: Yup.number().required("el precio es obligatorio"),
+      cantidad: Yup.number().required("La cantidad es obligatoria"),
+      descripcion: Yup.string().required("La descripcion es obligatoria"),
+      categoria: Yup.string().required("La categoria es requerida"),
+      visual: Yup.boolean().required("visual es requerido"),
+      foto: Yup.string().required("La foto es requerida"),
+    }),
+    onSubmit: async (datos,{resetForm}) => {
+      const res = await ConexionesProducto.createProduct({
+        nombre: datos.nombre,
+        foto: datos.foto,
+        descripcion: datos.descripcion,
+        precio: datos.precio,
+        categoria: datos.categoria,
+        visible: datos.visible,
+        cantidad: datos.cantidad,
+      })
+        .then(
+          message.success("se creo correctamente")
+          
+        )
+        
+        resetForm();
     },
+    
   });
 
   const [componentSize, setComponentSize] = useState("default");
@@ -49,46 +72,29 @@ export default function CrearProducto() {
     setComponentSize(size);
   };
 
-  const abrircerrarDropdown = () => {
-    setdropdown(!dropdown);
+  const convertirBase64 = async (archivo, setformik) => {
+    if (archivo) {
+      var reader = new FileReader();
+      reader.readAsDataURL(archivo.originFileObj);
+      reader.onload = function () {
+        const base64 = reader.result;
+        setformik("foto", base64);
+      };
+    }
   };
 
-  const convertirBase64 = async (archivo) => {
-    var reader = new FileReader();
-    reader.readAsDataURL(archivo);
-    reader.onload = function () {
-      const base64 = reader.result;
-      console.log(base64);
-      setimagen64(base64);
-    };
+  const seleccionarCategoria = (e, setformik) => {
+    setformik("categoria", e);
   };
 
-  const enviarDatos = (event) => {
-    event.preventDefault();
-    const { target } = event;
-    const nombre = target.nombre.value;
-    const precio = target.precio.value;
-    const descripcion = target.descripcion.value;
-    const cantidad = target.cantidad.value;
+  const hola = (event,setfiel) =>{
+      console.log(event)
+      setfiel("prueba",event)
 
-    CrearProducto({
-      nombre: nombre,
-      foto: imagen64,
-      descripcion: descripcion,
-      precio: precio,
-      categoria: categoria,
-      visible: visible,
-      cantidad: cantidad,
-    });
-  };
+  }
 
-  const CrearProducto = async (producto) => {
-    const res = await ConexionesProducto.createProduct(producto);
-    console.log(res);
-  };
-
-  const categoriaSeleccionada = (event) => {
-    setcategoria(event.target.value);
+  const numThousands = (num) => {
+    return Intl.NumberFormat('es-CO').format(num);
   };
 
   return (
@@ -106,6 +112,7 @@ export default function CrearProducto() {
             }}
           >
             <>
+              <Formik />
               <Form
                 labelCol={{
                   span: 4,
@@ -121,65 +128,97 @@ export default function CrearProducto() {
                 size={componentSize}
                 onFinish={formik.handleSubmit}
               >
-                <Form.Item label="Form Size" name="size">
-                  <Radio.Group>
-                    <Radio.Button value="small">Small</Radio.Button>
-                    <Radio.Button value="default">Default</Radio.Button>
-                    <Radio.Button value="large">Large</Radio.Button>
-                  </Radio.Group>
+                <Form.Item label="Nombre">
+                  <Input name="nombre" onChange={formik.handleChange}  />
+                  
                 </Form.Item>
-                <Form.Item label="Input">
-                  <Input name="nombre" onChange={formik.handleChange} />
+                <Form.Item label="Descripcion">
+                  <Input.TextArea
+                    name="descripcion"
+                    onChange={formik.handleChange}
+                  />
                 </Form.Item>
-                <Form.Item label="Select">
-                  <Select>
-                    <Select.Option value="demo">Demo</Select.Option>
+                <Form.Item label="Categorias">
+                  <Select
+                    name="categoria"
+                    onChange={(e) =>
+                      seleccionarCategoria(e, formik.setFieldValue)
+                    }
+                  >
+                    {categorias.map((categ) => {
+                      return <Option value={categ}>{categ}</Option>;
+                    })}
                   </Select>
                 </Form.Item>
-                <Form.Item label="TreeSelect">
-                  <TreeSelect
-                    treeData={[
-                      {
-                        title: "Light",
-                        value: "light",
-                        children: [
-                          {
-                            title: "Bamboo",
-                            value: "bamboo",
-                          },
-                        ],
-                      },
-                    ]}
+                <Form.Item label="Precio">
+                  <Input
+                    min={0}
+                    autoComplete="off"
+                    style={{ height: "32px", width: "100px" }}
+                    type="number"
+                    name="precio"
+                    onChange={formik.handleChange}
                   />
                 </Form.Item>
-                <Form.Item label="Cascader">
-                  <Cascader
-                    options={[
-                      {
-                        value: "zhejiang",
-                        label: "Zhejiang",
-                        children: [
-                          {
-                            value: "hangzhou",
-                            label: "Hangzhou",
-                          },
-                        ],
-                      },
-                    ]}
+                <Form.Item label="Cantidad">
+                  <Input
+                    name="cantidad"
+                    onBlur={formik.handleBlur}
+                    min={0}
+                    autoComplete="off"
+                    style={{ height: "32px", width: "100px" }}
+                    type="number"
+                    onChange={formik.handleChange}
                   />
                 </Form.Item>
-                <Form.Item label="DatePicker">
-                  <DatePicker />
+                <Form.Item label="prueba">
+                  <Input
+                    name="cantidad"
+
+                    
+                    autoComplete="off"
+                    style={{ height: "32px", width: "100px" }}
+                    value={numThousands( formik.values.prueba)}
+                    type="text"
+                    pattern="[0-9]+"
+                    onChange={(event)=>{
+                      const regex = /^[0-9]*$/;
+                      
+                      (regex.test(event.target.value.replace(/\./g, ''))) && 
+                      //console.log(event.target.value)
+                      
+                     // console.log(regex.test(event.target.value.replace(/\./g, '')))
+                      hola(event.target.value.replace(/\./g, ''),formik.setFieldValue)
+
+                    }}
+                  />
                 </Form.Item>
-                <Form.Item label="InputNumber">
-                  <InputNumber />
+                <Form.Item name="foto" label="Imagen">
+                  <Upload
+                    name="foto"
+                    beforeUpload={true}
+                    listType="picture"
+                    onChange={(e) =>
+                      convertirBase64(e.fileList[0], formik.setFieldValue)
+                    }
+                  >
+                    <Button icon={<UploadOutlined />}>
+                      Click para seleccionar
+                    </Button>
+                  </Upload>
                 </Form.Item>
-                <Form.Item label="Switch" valuePropName="checked">
-                  <Switch />
+                <Form.Item label="Ver" valuePropName="checked">
+                  <Switch
+                    name="visual"
+                    defaultChecked={formik.values.visual}
+                    onChange={(event) => {
+                      formik.setFieldValue("visual", event);
+                    }}
+                  />
                 </Form.Item>
                 <Form.Item wrapperCol={{ offset: 8 }}>
                   <Button type="primary" htmlType="submit">
-                    Submit
+                    Guardar
                   </Button>
                 </Form.Item>
               </Form>

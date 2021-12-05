@@ -1,6 +1,7 @@
 import React from "react";
 import { Layout, Menu} from "antd";
 import { useHistory } from "react-router";
+import { auth } from "../conexiones/firebase/firebase";
 
 const { Header } = Layout;
 
@@ -14,7 +15,7 @@ export default function Cabecera() {
         <Menu.Item
           key="1"
           onClick={() => {
-            history.push("/");
+            history.push("/principal");
           }}
         >
           Home
@@ -26,6 +27,14 @@ export default function Cabecera() {
           }}
         >
           Crear Producto
+        </Menu.Item>
+        <Menu.Item
+          key="3"
+          onClick={() => {
+            auth().signOut();
+          }}
+        >
+          Cerrar sesion
         </Menu.Item>
       </Menu>
     </Header>
