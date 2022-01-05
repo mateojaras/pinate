@@ -1,162 +1,231 @@
-import React, { useState, Fragment } from 'react';
-import "bootstrap/dist/css/bootstrap.min.css";
-import { useDispatch, useSelector } from 'react-redux';
-import ConexionesProducto from '../../conexiones/api/ConexionesProducto';
-import { Dropdown, DropdownItem, DropdownMenu, DropdownToggle } from 'reactstrap';
-import "../../estilos/crearproducto.css"
+import React, { useState } from "react";
+import { useDispatch } from "react-redux";
+import ConexionesProducto from "../../conexiones/api/ConexionesProducto";
+import "../../estilos/crearproducto.css";
+import Cabecera from "../../componentes/Cabecera";
+import * as Yup from "yup";
+import { Formik } from "formik";
+import {
+  Layout,
+  Form,
+  Upload,
+  Input,
+  Button,
+  Select,
+  Switch,
+  message,
+} from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+import BarraLateral from "../../componentes/BarraLateral";
+import { useFormik } from "formik";
+
+const { Content } = Layout;
+const { Option } = Select;
 
 export default function CrearProducto() {
+  const categorias = ["peluche", "globos", "decoracion"];
+  const dispatch = useDispatch();
 
-    const [imagen64, setimagen64] = useState()
-    const [categoria, setcategoria] = useState("categorias")
-    const [dropdown, setdropdown] = useState(false)
-    const [visible, setvisible] = useState(true)
-    const categorias = ["peluche", "globos", "decoracion"]
+  const formik = useFormik({
+    initialValues: {
+      nombre: null,
+      foto: null,
+      descripcion: null,
+      precio: null,
+      cantidad: null,
+      categoria: null,
+      visual: true,
+      prueba:''
+    },
+    validationSchema: Yup.object({
+      nombre: Yup.string().required("El nombre es obligatorio"),
+      precio: Yup.number().required("el precio es obligatorio"),
+      cantidad: Yup.number().required("La cantidad es obligatoria"),
+      descripcion: Yup.string().required("La descripcion es obligatoria"),
+      categoria: Yup.string().required("La categoria es requerida"),
+      visual: Yup.boolean().required("visual es requerido"),
+      foto: Yup.string().required("La foto es requerida"),
+    }),
+    onSubmit: async (datos,{resetForm}) => {
+      const res = await ConexionesProducto.createProduct({
+        nombre: datos.nombre,
+        foto: datos.foto,
+        descripcion: datos.descripcion,
+        precio: datos.precio,
+        categoria: datos.categoria,
+        visible: datos.visible,
+        cantidad: datos.cantidad,
+      })
+        .then(
+          message.success("se creo correctamente")
+          
+        )
+        
+        resetForm();
+    },
+    
+  });
 
-    const dispatch = useDispatch()
+  const [componentSize, setComponentSize] = useState("default");
 
-    const abrircerrarDropdown = () => {
-        setdropdown(!dropdown)
+  const onFormLayoutChange = ({ size }) => {
+    setComponentSize(size);
+  };
+
+  const convertirBase64 = async (archivo, setformik) => {
+    if (archivo) {
+      var reader = new FileReader();
+      reader.readAsDataURL(archivo.originFileObj);
+      reader.onload = function () {
+        const base64 = reader.result;
+        setformik("foto", base64);
+      };
     }
+  };
 
+  const seleccionarCategoria = (e, setformik) => {
+    setformik("categoria", e);
+  };
 
-    const convertirBase64 = async (archivo) => {
-        var reader = new FileReader();
-        reader.readAsDataURL(archivo)
-        reader.onload = function () {
-            const base64 = reader.result;
-            console.log(base64)
-            setimagen64(base64)
-        }
-    }
+  const hola = (event,setfiel) =>{
+      console.log(event)
+      setfiel("prueba",event)
 
-    const enviarDatos = (event) => {
-        event.preventDefault()
-        const { target } = event;
-        const nombre = target.nombre.value;
-        const precio = target.precio.value;
-        const descripcion = target.descripcion.value;
-        const cantidad = target.cantidad.value
+  }
 
-        CrearProducto({
-            nombre: nombre,
-            foto: imagen64,
-            descripcion: descripcion,
-            precio: precio,
-            categoria: categoria,
-            visible: visible,
-            cantidad: cantidad
-        })
-    }
+  const numThousands = (num) => {
+    return Intl.NumberFormat('es-CO').format(num);
+  };
 
-    const CrearProducto = async (producto) => {
+  return (
+    <Layout>
+      <Cabecera />
+      <Layout>
+        <BarraLateral />
+        <Layout style={{ padding: "0 24px 24px" }}>
+          <Content
+            className="site-layout-background"
+            style={{
+              padding: 24,
+              margin: 0,
+              minHeight: 280,
+            }}
+          >
+            <>
+              <Formik />
+              <Form
+                labelCol={{
+                  span: 4,
+                }}
+                wrapperCol={{
+                  span: 14,
+                }}
+                layout="horizontal"
+                initialValues={{
+                  size: componentSize,
+                }}
+                onValuesChange={onFormLayoutChange}
+                size={componentSize}
+                onFinish={formik.handleSubmit}
+              >
+                <Form.Item label="Nombre">
+                  <Input name="nombre" onChange={formik.handleChange}  />
+                  
+                </Form.Item>
+                <Form.Item label="Descripcion">
+                  <Input.TextArea
+                    name="descripcion"
+                    onChange={formik.handleChange}
+                  />
+                </Form.Item>
+                <Form.Item label="Categorias">
+                  <Select
+                    name="categoria"
+                    onChange={(e) =>
+                      seleccionarCategoria(e, formik.setFieldValue)
+                    }
+                  >
+                    {categorias.map((categ) => {
+                      return <Option value={categ}>{categ}</Option>;
+                    })}
+                  </Select>
+                </Form.Item>
+                <Form.Item label="Precio">
+                  <Input
+                    min={0}
+                    autoComplete="off"
+                    style={{ height: "32px", width: "100px" }}
+                    type="number"
+                    name="precio"
+                    onChange={formik.handleChange}
+                  />
+                </Form.Item>
+                <Form.Item label="Cantidad">
+                  <Input
+                    name="cantidad"
+                    onBlur={formik.handleBlur}
+                    min={0}
+                    autoComplete="off"
+                    style={{ height: "32px", width: "100px" }}
+                    type="number"
+                    onChange={formik.handleChange}
+                  />
+                </Form.Item>
+                <Form.Item label="prueba">
+                  <Input
+                    name="cantidad"
 
-        const res = await ConexionesProducto.createProduct(producto)
-        console.log(res)
-    }
+                    
+                    autoComplete="off"
+                    style={{ height: "32px", width: "100px" }}
+                    value={numThousands( formik.values.prueba)}
+                    type="text"
+                    pattern="[0-9]+"
+                    onChange={(event)=>{
+                      const regex = /^[0-9]*$/;
+                      
+                      (regex.test(event.target.value.replace(/\./g, ''))) && 
+                      //console.log(event.target.value)
+                      
+                     // console.log(regex.test(event.target.value.replace(/\./g, '')))
+                      hola(event.target.value.replace(/\./g, ''),formik.setFieldValue)
 
-    const categoriaSeleccionada = (event) => {
-        setcategoria(event.target.value)
-
-    }
-
-
-    return (
-        <>
-
-
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="well well-sm">
-                            <form class="form-horizontal" onSubmit={enviarDatos}>
-                                <fieldset>
-                                    <legend class="text-center header">Registrar Producto</legend>
-
-                                    <div class="form-group">
-                                        <span class="col-md-1 col-md-offset-2 text-center"><i class="fa fa-user bigicon"></i></span>
-                                        <div class="col-md-8">
-                                            <input id="fname" name="nombre" type="text" placeholder="Nombre" class="form-control" />
-                                        </div>
-                                    </div>
-
-
-                                    <div class="form-group">
-                                        <span class="col-md-1 col-md-offset-2 text-center"><i class="fa fa-envelope-o bigicon"></i></span>
-                                        <div class="col-md-8">
-                                            <input id="email" name="precio" type="number" placeholder="Precio" class="form-control" />
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <span class="col-md-1 col-md-offset-2 text-center"><i class="fa fa-envelope-o bigicon"></i></span>
-                                        <div class="col-md-8">
-                                            <input id="cantidad" name="cantidad" type="number" placeholder="Cantidad" class="form-control" />
-                                        </div>
-                                    </div>
-
-
-                                    <div class="form-group">
-                                        <span class="col-md-1 col-md-offset-2 text-center"><i class="fa fa-pencil-square-o bigicon"></i></span>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control" id="descripcion" name="message" placeholder="Descripcion sobre el producto" rows="7"></textarea>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <div className="col-md-8">
-                                            <input className="form-control" type="file" multiple onChange={(e) => convertirBase64(e.target.files[0])} />
-                                        </div>
-                                    </div>
-
-
-                                    <div class="form-group">
-                                        <div className="col-md-4">
-                                            <Dropdown isOpen={dropdown} toggle={abrircerrarDropdown}>
-                                                <DropdownToggle caret>
-                                                    {categoria}
-                                                </DropdownToggle>
-
-                                                <DropdownMenu>
-                                                    {
-                                                        categorias.map(cat => {
-                                                            return <DropdownItem onClick={categoriaSeleccionada} value={cat}>{cat}</DropdownItem>
-                                                        })
-                                                    }
-                                                </DropdownMenu>
-                                            </Dropdown>
-
-                                        </div>
-                                    </div>
-
-                                    <div className="col-md-8">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked" defaultChecked={visible} onChange={(e)=>{setvisible(e.target.checked)}}/>
-                                            <label class="form-check-label" for="flexSwitchCheckChecked">Visible en la pagina</label>
-                                        </div>
-
-                                    </div>
-
-
-
-                                    <div class="form-group">
-                                        <div class="col-md-12 text-center">
-                                            <button type="submit" class="btn btn-primary btn-lg">Enviar</button>
-                                        </div>
-                                    </div>
-
-
-
-                                </fieldset>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <br></br>
-            <img src={imagen64} />
-
-        </>
-
-    )
+                    }}
+                  />
+                </Form.Item>
+                <Form.Item name="foto" label="Imagen">
+                  <Upload
+                    name="foto"
+                    beforeUpload={true}
+                    listType="picture"
+                    onChange={(e) =>
+                      convertirBase64(e.fileList[0], formik.setFieldValue)
+                    }
+                  >
+                    <Button icon={<UploadOutlined />}>
+                      Click para seleccionar
+                    </Button>
+                  </Upload>
+                </Form.Item>
+                <Form.Item label="Ver" valuePropName="checked">
+                  <Switch
+                    name="visual"
+                    defaultChecked={formik.values.visual}
+                    onChange={(event) => {
+                      formik.setFieldValue("visual", event);
+                    }}
+                  />
+                </Form.Item>
+                <Form.Item wrapperCol={{ offset: 8 }}>
+                  <Button type="primary" htmlType="submit">
+                    Guardar
+                  </Button>
+                </Form.Item>
+              </Form>
+            </>
+          </Content>
+        </Layout>
+      </Layout>
+    </Layout>
+  );
 }
